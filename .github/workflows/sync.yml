@@ -1,0 +1,33 @@
+name: Merge upstream branches
+on:
+  schedule:
+    - cron:  '0 0 * * *'
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Merge upstream
+        run: |
+          git config --global user.name 'iotech-jenkins'
+          git config --global user.email 'bot@iotechsys.com'
+          git pull --unshallow  
+
+          git remote add upstream https://github.com/zephyrproject-rtos/zephyr.git
+          git fetch upstream
+
+          git checkout -b v1.14-branch origin/v1.14-branch
+          git merge --no-edit upstream/v1.14-branch
+          git push origin v1.14-branch
+
+          git checkout -b v2.2-branch origin/v2.2-branch
+          git merge --no-edit upstream/v2.2-branch
+          git push origin v2.2-branch
+
+          git checkout -b v2.3-branch origin/v2.3-branch
+          git merge --no-edit upstream/v2.3-branch
+          git push origin v2.3-branch
+
+          git checkout master
+          git merge --no-edit upstream/master
+          git push origin master
