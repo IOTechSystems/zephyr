@@ -3,7 +3,9 @@
 
 name: Documentation GitHub Workflow
 
-on: [pull_request]
+on:
+  schedule:
+    - cron:  '0 0 1 1 *'
 
 jobs:
   build:
