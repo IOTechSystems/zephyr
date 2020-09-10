@@ -82,6 +82,13 @@ API Changes
   const qualifier loss on ISRs, all ISRs now take a ``const *void`` as a
   paremeter as well.
 
+* Formerly ``device_get_binding()`` would return the device pointer if
+  invoked before the corresponding device was initialized.  As of this
+  release it only returns the pointer if the device successfully
+  initialized.  A behavior change can be observed if initialization for
+  a device fetches (but does not use) the pointer for a device it
+  depends on before that device has been initialized.
+
 * The ``_gatt_`` and ``_GATT_`` infixes have been removed for the HRS, DIS
   and BAS APIs and the Kconfig options.
 
@@ -255,6 +262,15 @@ Drivers and Sensors
 
 
 * I2C
+
+  * Introduced new driver for NXP LPC11U6x SoCs.  See
+    :option:`CONFIG_I2C_LPC11U6X`.
+
+  * Introduced new driver for emulated I2C devices, where I2C operations
+    are forwarded to a module that emulates responses from hardware.
+    This enables testing without hardware and allows unusual conditions
+    to be synthesized to test driver behavior.  See
+    :option:`CONFIG_I2C_EMUL`.
 
 
 * I2S
