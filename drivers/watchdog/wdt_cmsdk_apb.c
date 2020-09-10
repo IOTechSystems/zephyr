@@ -192,6 +192,10 @@ static int wdog_cmsdk_apb_init(const struct device *dev)
 	z_NmiHandlerSet(wdog_cmsdk_apb_isr);
 #endif
 
+#ifdef CONFIG_WDOG_CMSDK_APB_START_AT_BOOT
+	wdog_cmsdk_apb_setup(dev, 0);
+#endif
+
 	return 0;
 }
 
