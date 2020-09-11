@@ -1012,9 +1012,12 @@ endfunction(zephyr_linker_sources)
 # Helper function for CONFIG_CODE_DATA_RELOCATION
 # Call this function with 2 arguments file and then memory location
 function(zephyr_code_relocate file location)
+  if(NOT IS_ABSOLUTE ${file})
+    set(file ${CMAKE_CURRENT_SOURCE_DIR}/${file})
+  endif()
   set_property(TARGET code_data_relocation_target
     APPEND PROPERTY COMPILE_DEFINITIONS
-    "${location}:${CMAKE_CURRENT_SOURCE_DIR}/${file}")
+    "${location}:${file}")
 endfunction()
 
 # Usage:
@@ -1680,4 +1683,66 @@ function(generate_unique_target_name_from_filename filename target_name)
   string(MD5 unique_chars ${filename})
 
   set(${target_name} gen_${x}_${unique_chars} PARENT_SCOPE)
+endfunction()
+
+# Usage:
+#   zephyr_file(<mode> <arg> ...)
+#
+# Zephyr file function extension.
+# This function currently support the following <modes>
+#
+# APPLICATION_ROOT <path>: Check all paths in provided variable, and convert
+#                          those paths that are defined with `-D<path>=<val>`
+#                          to absolute path, relative from `APPLICATION_SOURCE_DIR`
+#                          Issue an error for any relative path not specified
+#                          by user with `-D<path>`
+#
+# returns an updated list of absolute paths
+function(zephyr_file)
+  set(options APPLICATION_ROOT)
+  cmake_parse_arguments(FILE "${options}" "" "" ${ARGN})
+  if(NOT FILE_APPLICATION_ROOT)
+    message(FATAL_ERROR "No <mode> given to `zephyr_file(<mode> <args>...)` function,\n \
+Please provide one of following: APPLICATION_ROOT")
+  endif()
+
+  if(FILE_APPLICATION_ROOT)
+    if(NOT (${ARGC} EQUAL 2))
+      math(EXPR ARGC "${ARGC} - 1")
+      message(FATAL_ERROR "zephyr_file(APPLICATION_ROOT <path-variable>) takes exactly 1 argument, ${ARGC} were given")
+    endif()
+
+    # Note: user can do: `-D<var>=<relative-path>` and app can at same
+    # time specify `list(APPEND <var> <abs-path>)`
+    # Thus need to check and update only CACHED variables (-D<var>).
+    set(CACHED_PATH $CACHE{${ARGV1}})
+    foreach(path ${CACHED_PATH})
+      # The cached variable is relative path, i.e. provided by `-D<var>` or
+      # `set(<var> CACHE)`, so let's update current scope variable to absolute
+      # path from  `APPLICATION_SOURCE_DIR`.
+      if(NOT IS_ABSOLUTE ${path})
+        set(abs_path ${APPLICATION_SOURCE_DIR}/${path})
+        list(FIND ${ARGV1} ${path} index)
+        if(NOT ${index} LESS 0)
+          list(REMOVE_AT ${ARGV1} ${index})
+          list(INSERT ${ARGV1} ${index} ${abs_path})
+        endif()
+      endif()
+    endforeach()
+
+    # Now all cached relative paths has been updated.
+    # Let's check if anyone uses relative path as scoped variable, and fail
+    foreach(path ${${ARGV1}})
+      if(NOT IS_ABSOLUTE ${path})
+        message(FATAL_ERROR
+"Relative path encountered in scoped variable: ${ARGV1}, value=${path}\n \
+Please adjust any `set(${ARGV1} ${path})` or `list(APPEND ${ARGV1} ${path})`\n \
+to absolute path using `\${CMAKE_CURRENT_SOURCE_DIR}/${path}` or similar. \n \
+Relative paths are only allowed with `-D${ARGV1}=<path>`")
+      endif()
+    endforeach()
+
+    # This updates the provided argument in parent scope (callers scope)
+    set(${ARGV1} ${${ARGV1}} PARENT_SCOPE)
+  endif()
 endfunction()

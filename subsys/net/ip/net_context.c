@@ -1369,9 +1369,7 @@ static int context_sendto(struct net_context *context,
 		msghdr = buf;
 	}
 
-	if (!msghdr && !dst_addr &&
-	    !(IS_ENABLED(CONFIG_NET_SOCKETS_CAN) &&
-	      net_context_get_ip_proto(context) == CAN_RAW)) {
+	if (!msghdr && !dst_addr) {
 		return -EDESTADDRREQ;
 	}
 
@@ -1480,6 +1478,21 @@ static int context_sendto(struct net_context *context,
 		   net_context_get_family(context) == AF_CAN) {
 		struct sockaddr_can *can_addr = (struct sockaddr_can *)dst_addr;
 		struct net_if *iface;
+
+		if (msghdr) {
+			can_addr = msghdr->msg_name;
+			addrlen = msghdr->msg_namelen;
+
+			if (!can_addr) {
+				can_addr = (struct sockaddr_can *)
+							(&context->remote);
+				addrlen = sizeof(struct sockaddr_can);
+			}
+
+			/* For sendmsg(), the dst_addr is NULL so set it here.
+			 */
+			dst_addr = (const struct sockaddr *)can_addr;
+		}
 
 		if (addrlen < sizeof(struct sockaddr_can)) {
 			return -EINVAL;
