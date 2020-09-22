@@ -204,8 +204,9 @@ enter_code64:
 #ifdef CONFIG_INIT_STACKS
 	movq $0xAAAAAAAAAAAAAAAA, %rax
 	movq %rsp, %rdi
-	subq $CONFIG_ISR_STACK_SIZE, %rdi
-	movq $(CONFIG_ISR_STACK_SIZE >> 3), %rcx
+	subq __x86_cpuboot_t_stack_size_OFFSET(%rbp), %rdi
+	movq __x86_cpuboot_t_stack_size_OFFSET(%rbp), %rcx
+	shr $3, %rcx /* moving 8 bytes a time, so fewer repeats */
 	rep stosq
 #endif
 
@@ -402,6 +403,11 @@ __resume:
 	lfence
 #endif /* CONFIG_X86_BOUNDS_CHECK_BYPASS_MITIGATION */
 
+#ifdef CONFIG_TRACING
+	pushq %rdi
+	call sys_trace_thread_switched_in
+	popq %rdi
+#endif
 	iretq
 
 
@@ -695,7 +701,7 @@ irq_dispatch:
 	wrmsr
 #else /* xAPIC */
 	movq z_loapic_regs, %rdx
-	movq %rax, LOAPIC_EOI(%rdx)
+	movl %eax, LOAPIC_EOI(%rdx)
 #endif /* CONFIG_X2APIC */
 
 	movq %gs:__x86_tss64_t_cpu_OFFSET, %rsi

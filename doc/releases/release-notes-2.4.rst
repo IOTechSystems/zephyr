@@ -90,6 +90,8 @@ API Changes
   been changed to always pass the original pointer of attributes along with its
   resolved handle.
 
+* Established the unrestricted alignment of flash reads for all drivers.
+
 Deprecated in this release
 ==========================
 
@@ -219,23 +221,43 @@ Boards & SoC Support
 
 * Added support for these SoC series:
 
+  * ARM Cortex-M1/M3 DesignStart FPGA
+
+* Made these changes in other SoC series:
+
+  * STM32L4/STM32WB: Added support for Low Power Mode
+  * STM32H7/STM32WB/STM32MP1: Added Dual Core concurrent register access
+    protection using HSEM
 
 * Added support for these ARM boards:
 
+  * ARM Cortex-M1/M3 DesignStart FPGA reference designs running on the Digilent
+    Arty A7 development board
   * nRF21540 Devkit (nrf21540dk_nrf52840).
+  * OLIMEX-STM32-H103
+  * ST B_L4S5I_IOT01A Discovery kit
+  * ST NUCLEO-H745ZI-Q
+  * Waveshare Open103Z
+  * WeAct Studio Black Pill V2.0
 
+* Made these changes in other boards:
 
-* Made these changes in other boards
-
+  * b_l072z_lrwan1: Added flash, LoRa, USB, EEPROM, RNG
+  * nucleo_l552ze_q: Added non secure target and TFM support
+  * STM32 boards: Enabled MPU on all boards with at least 64K flash
 
 * Added support for these following shields:
 
+  * Adafruit WINC1500 Wifi
+  * ARM Ltd. V2C-DAPLink for DesignStart FPGA
+  * Atmel AT86RF2XX Transceivers
+  * Buydisplay 2.8" TFT Touch Shield with Arduino adapter
+  * DAC80508 Evaluation Module
 
 Drivers and Sensors
 *******************
 
 * ADC
-
 
 * Audio
 
@@ -253,18 +275,23 @@ Drivers and Sensors
 
 * Clock Control
 
+  * STM32: Various changes including Flash latency wait states computation,
+    configuration option additions for H7 series, and fixes on F0/F3 PREDIV1
+    support
 
 * Console
 
 
 * Counter
 
+  * STM32: Added support on F0/F2 series
 
 * Crypto
 
 
 * DAC
 
+  * STM32: Added support for F0/F2/G4/L1 series
 
 * Debug
 
@@ -274,6 +301,8 @@ Drivers and Sensors
 
 * DMA
 
+  * STM32: Number of changes including k_malloc removal, driver piority init
+    increase, get_status API addition and various cleanups.
 
 * EEPROM
 
@@ -282,6 +311,7 @@ Drivers and Sensors
 
 * Entropy
 
+  * STM32: Added support for ISR mode. Added support on F7/H7/L0 series
 
 * ESPI
 
@@ -289,7 +319,8 @@ Drivers and Sensors
 * Ethernet
 
   * Added VLAN support to Intel e1000 driver.
-  * Added Ethernet support to stm32h7 based boards.
+  * Added Ethernet support to stm32h7 based boards (with IT based TX)
+  * Moved stm32 driver to device tree configuration
   * Added support for setting fixed configuration and read from device tree
     for ENET ETH interface and PHY in mcux driver.
   * Added support for device that do not use SMI for PHY setup in mcux driver.
@@ -303,10 +334,15 @@ Drivers and Sensors
     removed as it is unmaintained and all its functionality is available
     through ``CONFIG_SPI_NOR``.  Out of tree uses should convert to the
     supported driver using the ``jedec,spi-nor`` compatible.
-
+  * Enhanced nRF QSPI NOR flash driver (nrf_qspi_nor) so it supports unaligned read offset, read length and buffer offset.
+  * Added SFDP support in spi_nor driver.
+  * Fixed regression in nRF flash driver (soc_flash_nrf) with :option:`CONFIG_BT_CTLR_LOW_LAT` option.
+  * Introduced NRF radio scheduler interface in nRF flash driver (soc_flash_nrf).
+  * STM32: Factorized support for F0/F1/F3. Added L0 support. Various fixes.
 
 * GPIO
 
+  * Added driver for the Xilinx AXI GPIO IP
 
 * Hardware Info
 
@@ -322,6 +358,8 @@ Drivers and Sensors
     to be synthesized to test driver behavior.  See
     :option:`CONFIG_I2C_EMUL`.
 
+  * STM32: V1: Reset i2c device on read/write error
+  * STM32: V2: Added dts configurable Timing option
 
 * I2S
 
@@ -368,6 +406,7 @@ Drivers and Sensors
 
 * PWM
 
+  * STM32: Refactored using Cube LL API
 
 * Sensor
 
@@ -376,6 +415,7 @@ Drivers and Sensors
 
 * Serial
 
+  * Added driver for the Xilinx UART Lite IP
 
 * SPI
 
@@ -385,7 +425,8 @@ Drivers and Sensors
     specify 0 for this field will probably need to be updated to specify
     GPIO_ACTIVE_LOW.  SPI_CS_ACTIVE_LOW/HIGH are still used for chip
     selects that are not specified by a cs-gpios property.
-
+  * Added driver for the Xilinx AXI Quad SPI IP
+  * STM32: Various fixes around DMA mode.
 
 * Timer
 
@@ -608,6 +649,17 @@ Libraries / Subsystems
   are passed.  Before 2.3 extra arguments were joined to the last  argument.
   In 2.3 extra arguments caused a fault.  Now the shell will report that the
   command cannot be processed.
+
+* Debug:
+
+  * Core Dump:
+
+    * Added the ability to do core dump when fatal error is encountered.
+      This allows dumping the CPU registers and memory content for offline
+      debugging.
+    * Cortex-M, x86, and x86-64 are supported in this release.
+    * A data output backend utilizing the logging subsystem is introduced
+      in this release.
 
 HALs
 ****

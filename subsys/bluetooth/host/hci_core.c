@@ -4083,6 +4083,21 @@ static void hci_cmd_status(struct net_buf *buf)
 }
 
 #if defined(CONFIG_BT_OBSERVER)
+static bool is_adv_using_rand_addr(void)
+{
+	struct bt_le_ext_adv *adv = bt_adv_lookup_legacy();
+
+	if (IS_ENABLED(CONFIG_BT_EXT_ADV) &&
+	    BT_FEAT_LE_EXT_ADV(bt_dev.le.features)) {
+		/* When advertising using extended advertising HCI commands
+		 * then the advertiser has it's own random address command.
+		 */
+		return false;
+	}
+
+	return adv && atomic_test_bit(adv->flags, BT_ADV_ENABLED);
+}
+
 static int le_scan_set_random_addr(bool active_scan, uint8_t *own_addr_type)
 {
 	int err;
@@ -4099,8 +4114,6 @@ static int le_scan_set_random_addr(bool active_scan, uint8_t *own_addr_type)
 			*own_addr_type = BT_ADDR_LE_RANDOM;
 		}
 	} else {
-		struct bt_le_ext_adv *adv = bt_adv_lookup_legacy();
-
 		*own_addr_type = bt_dev.id_addr[0].type;
 
 		/* Use NRPA unless identity has been explicitly requested
@@ -4108,12 +4121,16 @@ static int le_scan_set_random_addr(bool active_scan, uint8_t *own_addr_type)
 		 * Use same RPA as legacy advertiser if advertising.
 		 */
 		if (!IS_ENABLED(CONFIG_BT_SCAN_WITH_IDENTITY) &&
-		    !(IS_ENABLED(CONFIG_BT_EXT_ADV) &&
-		      BT_FEAT_LE_EXT_ADV(bt_dev.le.features)) &&
-		    adv && !atomic_test_bit(adv->flags, BT_ADV_ENABLED)) {
+		    !is_adv_using_rand_addr()) {
 			err = le_set_private_addr(BT_ID_DEFAULT);
 			if (err) {
-				return err;
+				if (active_scan || !is_adv_using_rand_addr()) {
+					return err;
+				} else {
+					BT_WARN("Ignoring failure to set "
+						"address for passive scan (%d)",
+						err);
+				}
 			}
 
 			*own_addr_type = BT_ADDR_LE_RANDOM;
@@ -6575,14 +6592,17 @@ static int set_data_add(uint8_t *set_data, uint8_t set_data_len_max,
 
 			/* Check if ad fit in the remaining buffer */
 			if ((set_data_len + len + 2) > set_data_len_max) {
-				len = set_data_len_max - (set_data_len + 2);
+				ssize_t shortened_len = set_data_len_max -
+							(set_data_len + 2);
 
-				if (type != BT_DATA_NAME_COMPLETE || !len) {
+				if (!(type == BT_DATA_NAME_COMPLETE &&
+				      shortened_len > 0)) {
 					BT_ERR("Too big advertising data");
 					return -EINVAL;
 				}
 
 				type = BT_DATA_NAME_SHORTENED;
+				len = shortened_len;
 			}
 
 			set_data[set_data_len++] = len + 1;
