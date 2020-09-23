@@ -19,6 +19,14 @@ Security Vulnerability Related
 
 The following CVEs are addressed by this release:
 
+* CVE-2020-10064: Improper Input Frame Validation in ieee802154 Processing
+* CVE-2020-10066: Incorrect Error Handling in Bluetooth HCI core
+* CVE-2020-10072: all threads can access all socket file descriptors
+* CVE-2020-13598: FS: Buffer Overflow when enabling Long File Names in FAT_FS and calling fs_stat
+* CVE-2020-13599: Security problem with settings and littlefs
+* CVE-2020-13601: Under embargo until 2020/11/18
+* CVE-2020-13602: Remote Denial of Service in LwM2M do_write_op_tlv
+
 
 More detailed information can be found in:
 https://docs.zephyrproject.org/latest/security/vulnerabilities.html
@@ -410,6 +418,8 @@ Drivers and Sensors
 
 * Sensor
 
+  * Added API function ``sensor_attr_get()`` for getting a sensor's
+    attribute.
   * Added support for wsen-itds Accel Sensor.
 
 
