@@ -9,6 +9,17 @@ We are pleased to announce the release of Zephyr RTOS version 2.4.0.
 
 Major enhancements with this release include:
 
+* Introduced initial support for virtual memory management.
+
+* Added Bluetooth host support for periodic advertisement and isochronous
+  channels.
+
+* Enabled the new TCP stack, TCP2, by default. This stack was introduced in
+  Zephyr v2.1.0 to improve network protocol testability with open source tools.
+
+* Introduced a new toolchain abstraction with initial implementations for GCC
+  and LLVM/Clang, and groundwork for future support of commercial toolchains.
+
 * Moved to using C99 integer types and deprecate Zephyr integer types.  The
   Zephyr types can be enabled by Kconfig DEPRECATED_ZEPHYR_INT_TYPES option.
 
@@ -103,6 +114,24 @@ API Changes
 Deprecated in this release
 ==========================
 
+* The full set of ``k_mem_pool`` and ``sys_mem_pool`` APIs
+  are considered deprecated as of this release. The replacements are
+  the ``k_heap`` and ``sys_heap`` APIs. These APIs are not tagged with
+  ``__deprecated`` in the 2.4 release, but will be in 2.5. They will be
+  removed completely in Zephyr 2.6 LTS. The set of APIs now deprecated is as
+  follows:
+
+  * ``k_mbox_data_block_get()``
+  * ``k_pipe_block_put()``
+  * ``K_MEM_POOL_DEFINE()``
+  * ``k_mem_pool_alloc()``
+  * ``k_mem_pool_free()``
+  * ``k_mem_pool_free_id()``
+  * ``SYS_MEM_POOL_DEFINE()``
+  * ``sys_mem_pool_init()``
+  * ``sys_mem_pool_alloc()``
+  * ``sys_mem_pool_free()``
+  * ``sys_mem_pool_try_expand_inplace()``
 
 Removed APIs in this release
 ============================
@@ -230,6 +259,7 @@ Boards & SoC Support
 * Added support for these SoC series:
 
   * ARM Cortex-M1/M3 DesignStart FPGA
+  * NXP i.MX RT685, i.MX8M Mini, and LPC11U6x
 
 * Made these changes in other SoC series:
 
@@ -241,7 +271,9 @@ Boards & SoC Support
 
   * ARM Cortex-M1/M3 DesignStart FPGA reference designs running on the Digilent
     Arty A7 development board
+  * Laird Connectivity Pinnacle 100 Modem Development board (pinnacle_100_dvk)
   * nRF21540 Devkit (nrf21540dk_nrf52840).
+  * NXP i.MX RT685 EVK, i.MX8M Mini EVK, LPCXpresso LPC11U68
   * OLIMEX-STM32-H103
   * ST B_L4S5I_IOT01A Discovery kit
   * ST NUCLEO-H745ZI-Q
@@ -253,6 +285,7 @@ Boards & SoC Support
   * b_l072z_lrwan1: Added flash, LoRa, USB, EEPROM, RNG
   * nucleo_l552ze_q: Added non secure target and TFM support
   * STM32 boards: Enabled MPU on all boards with at least 64K flash
+  * lpcxpresso55s69: Added TFM support
 
 * Added support for these following shields:
 
@@ -286,6 +319,7 @@ Drivers and Sensors
   * STM32: Various changes including Flash latency wait states computation,
     configuration option additions for H7 series, and fixes on F0/F3 PREDIV1
     support
+  * Added LPC11U6X driver.
 
 * Console
 
@@ -293,6 +327,7 @@ Drivers and Sensors
 * Counter
 
   * STM32: Added support on F0/F2 series
+  * Added MCUX PIT counter driver for Kinetis K6x and K8x SoCs.
 
 * Crypto
 
@@ -311,6 +346,8 @@ Drivers and Sensors
 
   * STM32: Number of changes including k_malloc removal, driver piority init
     increase, get_status API addition and various cleanups.
+  * Added MCUX EDMA driver for i.MX RT and Kinetis K6x SoCs.
+  * Added MCUX LPC driver for LPC and i.MX RT6xx SoCs.
 
 * EEPROM
 
@@ -351,6 +388,7 @@ Drivers and Sensors
 * GPIO
 
   * Added driver for the Xilinx AXI GPIO IP
+  * Added LPC11U6X driver.
 
 * Hardware Info
 
@@ -368,6 +406,7 @@ Drivers and Sensors
 
   * STM32: V1: Reset i2c device on read/write error
   * STM32: V2: Added dts configurable Timing option
+  * Fixed MCUX LPI2C driver transfer status after NACK.
 
 * I2S
 
@@ -408,6 +447,7 @@ Drivers and Sensors
 
 * Pinmux
 
+  * Added LPC11U6X driver.
 
 * PS/2
 
@@ -426,6 +466,9 @@ Drivers and Sensors
 * Serial
 
   * Added driver for the Xilinx UART Lite IP
+  * Added NXP IUART driver for i.MX8M Mini.
+  * Implemented uart_config_get API in MCUX UART driver
+  * Added LPC11U6X driver.
 
 * SPI
 
@@ -437,6 +480,8 @@ Drivers and Sensors
     selects that are not specified by a cs-gpios property.
   * Added driver for the Xilinx AXI Quad SPI IP
   * STM32: Various fixes around DMA mode.
+  * Extended MCUX Flexcomm driver to support slave mode.
+  * Added optional delays to MCUX DSPI and LPSPI drivers.
 
 * Timer
 
@@ -460,6 +505,8 @@ Drivers and Sensors
 
 
 * Watchdog
+
+  * Added MCUX WWDT driver for LPC SoCs.
 
 
 * WiFi
