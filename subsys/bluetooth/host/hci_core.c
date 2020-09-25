@@ -4647,28 +4647,49 @@ static void le_per_adv_sync_established(struct net_buf *buf)
 	struct bt_le_per_adv_sync *pending_per_adv_sync;
 	int err;
 
-	err = bt_le_scan_update(false);
+	pending_per_adv_sync = get_pending_per_adv_sync();
 
-	if (err) {
-		BT_ERR("Could not stop scan (%d)", err);
+	if (pending_per_adv_sync) {
+		atomic_clear_bit(pending_per_adv_sync->flags,
+				 BT_PER_ADV_SYNC_SYNCING);
+		err = bt_le_scan_update(false);
+
+		if (err) {
+			BT_ERR("Could not update scan (%d)", err);
+		}
+	}
+
+	if (!pending_per_adv_sync ||
+	    pending_per_adv_sync->sid != evt->sid ||
+	    bt_addr_le_cmp(&pending_per_adv_sync->addr, &evt->adv_addr)) {
+		struct bt_le_per_adv_sync_term_info term_info;
+
+		BT_ERR("Unexpected per adv sync established event");
+		per_adv_sync_terminate(sys_le16_to_cpu(evt->handle));
+
+		if (pending_per_adv_sync) {
+			/* Terminate the pending PA sync and notify app */
+			term_info.addr = &pending_per_adv_sync->addr;
+			term_info.sid = pending_per_adv_sync->sid;
+
+			/* Deleting before callback, so the caller will be able
+			 * to restart sync in the callback.
+			 */
+			per_adv_sync_delete(pending_per_adv_sync);
+
+			if (pending_per_adv_sync->cb &&
+			    pending_per_adv_sync->cb->term) {
+				pending_per_adv_sync->cb->term(
+					pending_per_adv_sync, &term_info);
+			}
+		}
+		return;
 	}
 
 	if (evt->status == BT_HCI_ERR_OP_CANCELLED_BY_HOST) {
 		/* Cancelled locally, don't call CB */
 		return;
 	}
-
-	pending_per_adv_sync = get_pending_per_adv_sync();
-
-	if (!pending_per_adv_sync ||
-	    pending_per_adv_sync->sid != evt->sid ||
-	    bt_addr_le_cmp(&pending_per_adv_sync->addr, &evt->adv_addr)) {
-		BT_ERR("Unexpected per adv sync established event");
-		per_adv_sync_terminate(sys_le16_to_cpu(evt->handle));
-		return;
-	}
-
-	atomic_clear_bit(pending_per_adv_sync->flags, BT_PER_ADV_SYNC_SYNCING);
 
 	atomic_set_bit(pending_per_adv_sync->flags, BT_PER_ADV_SYNC_SYNCED);
 
@@ -6702,7 +6723,7 @@ int bt_set_name(const char *name)
 	size_t len = strlen(name);
 	int err;
 
-	if (len >= sizeof(bt_dev.name)) {
+	if (len > CONFIG_BT_DEVICE_NAME_MAX) {
 		return -ENOMEM;
 	}
 
@@ -6710,12 +6731,13 @@ int bt_set_name(const char *name)
 		return 0;
 	}
 
-	strncpy(bt_dev.name, name, sizeof(bt_dev.name));
+	strncpy(bt_dev.name, name, len);
+	bt_dev.name[len] = '\0';
 
 	/* Update advertising name if in use */
 	if (adv && atomic_test_bit(adv->flags, BT_ADV_INCLUDE_NAME)) {
 		struct bt_data data[] = { BT_DATA(BT_DATA_NAME_COMPLETE, name,
-						strlen(name)) };
+						len) };
 		struct bt_ad sd = { data, ARRAY_SIZE(data) };
 
 		set_sd(adv, &sd, 1);
@@ -7374,7 +7396,7 @@ int bt_le_per_adv_sync_create(const struct bt_le_per_adv_sync_param *param,
 	 * the advertiser address in the sync params.
 	 */
 	if (!atomic_test_bit(bt_dev.flags, BT_DEV_SCANNING)) {
-		err = bt_le_scan_update(false);
+		err = bt_le_scan_update(true);
 
 		if (err) {
 			bt_le_per_adv_sync_delete(per_adv_sync);
