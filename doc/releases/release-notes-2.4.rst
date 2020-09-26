@@ -30,6 +30,7 @@ Security Vulnerability Related
 
 The following CVEs are addressed by this release:
 
+* CVE-2020-10060: UpdateHub Might Dereference An Uninitialized Pointer
 * CVE-2020-10064: Improper Input Frame Validation in ieee802154 Processing
 * CVE-2020-10066: Incorrect Error Handling in Bluetooth HCI core
 * CVE-2020-10072: all threads can access all socket file descriptors
@@ -206,6 +207,13 @@ Architectures
 
 * ARC:
 
+  * Added ARC MetaWare toolchain support
+  * General arch improvements for stacks & memory domains
+  * API improvements for cache flush and cache invalidate
+  * Debugging help: show all registers on exception
+  * Fix for fast irq (one register bank configuration)
+  * Fix for undefined shift behavior (CID 211523)
+
 
 * ARM:
 
@@ -259,20 +267,38 @@ Boards & SoC Support
 * Added support for these SoC series:
 
   * ARM Cortex-M1/M3 DesignStart FPGA
+  * Atmel SAM4L
+  * Nordic nRF52805
   * NXP i.MX RT685, i.MX8M Mini, and LPC11U6x
+  * ARC QEMU support for EM and HS family
 
 * Made these changes in other SoC series:
 
   * STM32L4/STM32WB: Added support for Low Power Mode
   * STM32H7/STM32WB/STM32MP1: Added Dual Core concurrent register access
     protection using HSEM
+  * Increase cpu frequency for ARC nsim_hs_smp
+
+
+* Changes for ARC boards:
+
+  * ARC QEMU boards for ARC EM and HS
+  * ARC MetaWare toolchain support, including mdb runner for various ARC boards
+  * gcov coverage support for ARC QEMU
+  * New nSIM configuration, corresponding to em7d_v22 EMSK board
+  * Enable SMP on HSDK board, including dual core and quad core configurations
+  * Switch from legacy ARC-nSIM UART to ns16550 UART model and driver
+  * Fix EMSDP secure config for emsdp_em7d_esp
 
 * Added support for these ARM boards:
 
   * ARM Cortex-M1/M3 DesignStart FPGA reference designs running on the Digilent
     Arty A7 development board
+  * Atmel SAM4L-EK board
   * Laird Connectivity Pinnacle 100 Modem Development board (pinnacle_100_dvk)
-  * nRF21540 Devkit (nrf21540dk_nrf52840).
+  * nRF21540 DK (nrf21540dk_nrf52840)
+  * nRF52805 emulation on nRF52 DK (nrf52dk_nrf52805)
+  * nRF5340 DK
   * NXP i.MX RT685 EVK, i.MX8M Mini EVK, LPCXpresso LPC11U68
   * OLIMEX-STM32-H103
   * ST B_L4S5I_IOT01A Discovery kit
@@ -283,6 +309,7 @@ Boards & SoC Support
 * Made these changes in other boards:
 
   * b_l072z_lrwan1: Added flash, LoRa, USB, EEPROM, RNG
+  * nRF boards: enabled HW Stack Protection by default on boards maintained by Nordic
   * nucleo_l552ze_q: Added non secure target and TFM support
   * STM32 boards: Enabled MPU on all boards with at least 64K flash
   * lpcxpresso55s69: Added TFM support
@@ -391,7 +418,7 @@ Drivers and Sensors
   * Added LPC11U6X driver.
 
 * Hardware Info
-
+  * Added Atmel SAM4L driver
 
 * I2C
 
@@ -599,6 +626,12 @@ Bluetooth
 Build and Infrastructure
 ************************
 
+* Improved support for additional toolchains
+
+  * Better toolchain abstractions
+  * Support for the ARC MetaWare toolchain
+
+
 * Devicetree:
 
   * Added new devicetree macros that provide a default value if the property
@@ -607,6 +640,7 @@ Build and Infrastructure
   * Added support for inferring bindings for ``/zephyr,user`` devicetree node
     to allow applications an easy way to specify application specific
     devicetree properties without having a binding.
+
 
 * Support for multiple SOC and ARCH roots.
   The :ref:`SOC_ROOT <application>` and ``ARCH_ROOT`` variables used to specify
@@ -638,6 +672,8 @@ Libraries / Subsystems
 
   * updatehub:
 
+    * Added download block check.
+    * Added support to flash integrity check using SHA-256 algorithm.
     * Moved updatehub from lib to subsys/mgmt directory.
     * Fixed out-of-bounds access and add flash_img_init return value check.
     * Fixed getaddrinfo resource leak.
@@ -697,22 +733,22 @@ Libraries / Subsystems
     library footprint when some options are not enabled, so you should wait for
     future releases if higher ROM usage is a concern for your application.
 
-
 * Shell:
 
   * Switched to use kernel stacks.
   * Fixed select command.
   * Fixed prompting dynamic commands.
+  * Change behavior when more than ``CONFIG_SHELL_ARGC_MAX`` arguments are
+    passed.  Before 2.3 extra arguments were joined to the last argument.
+    In 2.3 extra arguments caused a fault.  Now the shell will report that
+    the command cannot be processed.
 
+
+* Storage:
+  * Added flash SHA-256 integrity check.
 
 * Tracing:
   * Tracing backed API now checks if init function exists prio to calling it.
-
-* Shell:
-  * Change behavior when more than ``CONFIG_SHELL_ARGC_MAX`` arguments
-  are passed.  Before 2.3 extra arguments were joined to the last  argument.
-  In 2.3 extra arguments caused a fault.  Now the shell will report that the
-  command cannot be processed.
 
 * Debug:
 
