@@ -28,6 +28,10 @@ jobs:
           git merge --no-edit upstream/v2.3-branch
           git push origin v2.3-branch
 
+          git checkout -b v2.4-branch origin/v2.4-branch
+          git merge --no-edit upstream/v2.4-branch
+          git push origin v2.4-branch
+
           git checkout master
           git merge --no-edit upstream/master
           git push origin master
