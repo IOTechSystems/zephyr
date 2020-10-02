@@ -1640,21 +1640,6 @@ static void ticker_stop_cb(uint32_t ticks_at_expire, uint32_t remainder,
 	uint8_t handle;
 	uint32_t ret;
 
-#if 0
-	/* NOTE: abort the event, so as to permit ticker_job execution, if
-	 *       disabled inside events.
-	 */
-	if (adv->ull.ref) {
-		static memq_link_t _link;
-		static struct mayfly _mfy = {0, 0, &_link, NULL, lll_disable};
-
-		_mfy.param = &adv->lll;
-		ret = mayfly_enqueue(TICKER_USER_ID_ULL_HIGH,
-				     TICKER_USER_ID_LLL, 0, &_mfy);
-		LL_ASSERT(!ret);
-	}
-#endif
-
 	handle = ull_adv_handle_get(adv);
 	LL_ASSERT(handle < BT_CTLR_ADV_SET);
 
@@ -1690,7 +1675,7 @@ static void ticker_op_stop_cb(uint32_t status, void *param)
 	adv = param;
 	hdr = &adv->ull;
 	mfy.param = &adv->lll;
-	if (hdr->ref) {
+	if (ull_ref_get(hdr)) {
 		LL_ASSERT(!hdr->disabled_cb);
 		hdr->disabled_param = mfy.param;
 		hdr->disabled_cb = disabled_cb;

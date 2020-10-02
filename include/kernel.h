@@ -516,6 +516,12 @@ struct _thread_base {
 #endif
 
 	_wait_q_t join_waiters;
+#if __ASSERT_ON
+	/* For detecting calls to k_thread_create() on threads that are
+	 * already active
+	 */
+	atomic_t cookie;
+#endif
 };
 
 typedef struct _thread_base _thread_base_t;
@@ -4906,7 +4912,7 @@ enum _poll_types_bits {
 	_POLL_NUM_TYPES
 };
 
-#define Z_POLL_TYPE_BIT(type) (1 << ((type) - 1))
+#define Z_POLL_TYPE_BIT(type) (1U << ((type) - 1U))
 
 /* private - states bit positions */
 enum _poll_states_bits {
@@ -4928,7 +4934,7 @@ enum _poll_states_bits {
 	_POLL_NUM_STATES
 };
 
-#define Z_POLL_STATE_BIT(state) (1 << ((state) - 1))
+#define Z_POLL_STATE_BIT(state) (1U << ((state) - 1U))
 
 #define _POLL_EVENT_NUM_UNUSED_BITS \
 	(32 - (0 \
@@ -5214,8 +5220,14 @@ static inline void k_cpu_idle(void)
 /**
  * @brief Make the CPU idle in an atomic fashion.
  *
- * Similar to k_cpu_idle(), but called with interrupts locked if operations
- * must be done atomically before making the CPU idle.
+ * Similar to k_cpu_idle(), but must be called with interrupts locked.
+ *
+ * Enabling interrupts and entering a low-power mode will be atomic,
+ * i.e. there will be no period of time where interrupts are enabled before
+ * the processor enters a low-power mode.
+ *
+ * After waking up from the low-power mode, the interrupt lockout state will
+ * be restored as if by irq_unlock(key).
  *
  * @param key Interrupt locking key obtained from irq_lock().
  *

@@ -10,7 +10,7 @@
 
 / {
 	model = "STMicroelectronics STM32F429ZI-NUCLEO board";
-	compatible = "st,stm32f429zi-nucleo", "st,stm32f429";
+	compatible = "st,stm32f429zi-nucleo";
 
 	chosen {
 		zephyr,console = &usart3;
@@ -51,6 +51,10 @@
 		led2 = &red_led_1;
 		sw0 = &user_button;
 	};
+};
+
+&adc1 {
+	status = "okay";
 };
 
 &i2c1 {
